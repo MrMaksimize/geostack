@@ -1,0 +1,31 @@
+version: '2'
+services:
+    postgres:
+        image: postgres:9.6
+        environment:
+            - POSTGRES_USER=${PG_USER}
+            - POSTGRES_PASSWORD=${PG_PASS}
+            - POSTGRES_DB=geopostgis
+        ports:
+            - "5432:5432"
+        volumes:
+            - ${PATH_PREFIX}/db/data:/var/lib/postgresql/data
+
+
+    jupyter:
+        image: mrmaksimize/docker_geostack:latest
+        restart: always
+        volumes:
+            - ${PATH_PREFIX}/working_dir:/home/jovyan/work
+        depends_on:
+            - postgres
+        environment:
+            - POSTGRES_USER=${PG_USER}
+            - POSTGRES_PASSWORD=${PG_PASS}
+            - POSTGRES_DB=geopostgis
+        ports:
+            - "8888:8888"
+        links:
+            - postgres:postgres
+        command: start-notebook.sh
+
