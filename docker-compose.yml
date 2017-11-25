@@ -1,6 +1,6 @@
-version: '2'
+version: '3'
 services:
-    postgres:
+    postgis:
         image: postgres:9.6
         environment:
             - POSTGRES_USER=${PG_USER}
@@ -10,6 +10,15 @@ services:
             - "5432:5432"
         volumes:
             - ${PATH_PREFIX}/db/data:/var/lib/postgresql/data
+
+
+    mongo:
+        image: mongo
+        ports:
+            - "27017:27017"
+        volumes:
+            - ${PATH_PREFIX}/db/mongo_data:/data/db
+
 
 
     jupyter:
@@ -26,6 +35,25 @@ services:
         ports:
             - "8888:8888"
         links:
-            - postgres:postgres
+            - postgis:postgis
         command: start-notebook.sh
+
+    adminer:
+        image: adminer
+        restart: always
+        #HOST:CONTAINER
+        ports:
+            - "8082:8080"
+        links:
+            - postgis:postgis
+
+
+    mongoexpress:
+        image: mongo-express
+        restart: always
+        #HOST:CONTAINER
+        ports:
+            - "8081:8081"
+        links:
+            - mongo:mongo
 
