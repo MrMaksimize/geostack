@@ -5,7 +5,7 @@ An un-opinionted combination of various available and useful geospatial data too
 
 Based on [Jupyter DockerStacks SciPy Notebook](https://github.com/jupyter/docker-stacks/tree/master/scipy-notebook)
 With a lot of input and knowledge from our beloved [Arnaud Vedy](https://github.com/arnaudvedy) and his
-[datascience-notbook](https://github.com/arnaudvedy/datascience-notebook)
+[datascience-notebook](https://github.com/arnaudvedy/datascience-notebook)
 
 ## How do I use this?
 Copy `env.example` to `.env`
