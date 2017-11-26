@@ -22,7 +22,7 @@ services:
 
 
     jupyter:
-        image: mrmaksimize/docker_geostack:latest
+        image: mrmaksimize/geostack:latest
         restart: always
         volumes:
             - ${PATH_PREFIX}/working_dir:/home/jovyan/work
