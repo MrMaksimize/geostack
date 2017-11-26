@@ -1,9 +1,9 @@
 # AUTHOR: Maksim Pecherskiy
 # DESCRIPTION:
-# BUILD: docker build --rm -t mrmaksimize/docker_geostack.
-# SOURCE: https://github.com/mrmaksimize/docker_geostack
+# BUILD: docker build --rm -t mrmaksimize/geostack.
+# SOURCE: https://github.com/mrmaksimize/geostack
 
-FROM jupyter/datascience-notebook
+FROM jupyter/scipy-notebook
 
 # Configure environment - matches base notebook
 ENV CONDA_DIR=/opt/conda \
@@ -64,10 +64,7 @@ RUN set -ex \
         $buildDeps \
         apt-utils \
         curl \
-        git \
         netcat \
-        #locales \
-        #cython \
         python-gdal \
         libaio1 \
         unzip \
@@ -94,20 +91,20 @@ RUN npm install -g mapshaper \
 
 
 # Python packages
-RUN pip install boto3 \
-    && pip install geojson \
-    && pip install pymssql \
-    && pip install xlrd \
-    && pip install beautifulsoup4 \
-    && pip install lxml \
-    && pip install geomet \
-    && pip install geopy \
-    && pip install rtree \
-    && pip install shapely \
-    && pip install fiona \
-    && pip install descartes \
-    && pip install pyproj \
-    && pip install geopandas
+RUN conda install --yes \
+    'boto3' \
+    'geojson' \
+    'pymssql' \
+    'xlrd' \
+    'beautifulsoup4' \
+    'lxml' \
+    'geopy' \
+    'rtree' \
+    'shapely' \
+    'fiona' \
+    'descartes' \
+    'pyproj' \
+    'geopandas'
 
 #Switch to Root for cleanup
 USER root
@@ -132,8 +129,6 @@ RUN apt-get clean \
         /usr/share/doc \
         /usr/share/doc-base
 
-COPY script/start-compose.sh /usr/local/bin/
-#
 #RUN chown -R airflow: ${AIRFLOW_HOME} \
 #    && chmod +x ${AIRFLOW_HOME}/entrypoint.sh \
 #    && chown -R airflow /usr/lib/python* /usr/local/lib/python* \

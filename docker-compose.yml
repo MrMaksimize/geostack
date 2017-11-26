@@ -37,7 +37,7 @@ services:
             - "8888:8888"
         links:
             - postgis:postgis
-        command: start-notebook.sh
+        command: start-notebook.sh --NotebookApp.token=''
 
     adminer:
         image: adminer
