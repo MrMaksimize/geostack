@@ -25,7 +25,7 @@ services:
         image: mrmaksimize/geostack:latest
         restart: always
         volumes:
-            - ${PATH_PREFIX}/working_dir:/home/jovyan/work
+            - ${PATH_PREFIX}/work:/home/jovyan/work
         depends_on:
             - postgis
             - mongo
@@ -38,6 +38,14 @@ services:
         links:
             - postgis:postgis
         command: start-notebook.sh --NotebookApp.token=''
+
+    mapshaper:
+        image: crazycapivara/docker-mapshaper:latest
+        restart: always
+        volumes:
+            - ${PATH_PREFIX}/work_dir:/home/jovyan/work
+        ports:
+            - "5555:5555"
 
     adminer:
         image: adminer

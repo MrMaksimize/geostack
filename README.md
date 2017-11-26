@@ -14,6 +14,9 @@ Run `docker-compose up` or `docker-compose up -d` if you want to run detached.
 #### Jupyter Notebook URL:
 http://localhost:8888
 
+#### Mapshaper GUI URL:
+http://localhost:5555
+
 #### PostGIS Info
 The PostGIS port is exposed at 5432.  Make sure you have copied env.example to .env so the password gets set.
 You can connect from a local client or QGIS, but there's an easy interface available at
@@ -53,6 +56,7 @@ Because installing all this and orchestrating it together is hard.  Docker-Compo
 #### Node
 * [Mapshaper](https://github.com/mbloch/mapshaper)
 	* Transformation of geo data
+* [Mapshaper GUI] -- See Above
 * [GitHub - mapbox/mapbox-tile-copy: From geodata files to tiles on S3](https://github.com/mapbox/mapbox-tile-copy)
 * [GitHub - mapbox/geobuf: A compact binary encoding for geographic data.](https://github.com/mapbox/geobuf)
 * [Turf.js | Advanced Geospatial Analysis](http://turfjs.org/)
