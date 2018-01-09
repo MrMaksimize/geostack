@@ -1,7 +1,5 @@
 """Geospatial Utilities."""
 import os
-import logging
-from poseidon.util import general
 import requests
 import csv
 import json
@@ -19,156 +17,93 @@ import zipfile
 from osgeo import ogr
 from osgeo import osr
 import geojson
-import geobuf
+#import geobuf
 import gzip
 import shutil
-
-conf = general.config
-
-
-def geocode_address_google(address_line='',
-                           locality='San Diego',
-                           state='CA',
-                           **kwargs):
-    """Geocoding function using Google geocoding API."""
-    address_line = str(address_line)
-    locality = str(locality)
-    state = str(state)
-    google_token = conf['google_token']
-    url = 'https://maps.googleapis.com/maps/api/geocode/json?'\
-          + 'address={address}&'\
-          + 'components=country:US|'\
-          + 'administrative_area:{state}|'\
-          + 'locality:{locality}&'\
-          + 'key={google_token}'
-
-    url = url.format(address=address_line,
-                     state=state,
-                     locality=locality,
-                     google_token=google_token)
-
-    logging.info('Google Geocoding for: ' + address_line)
-    if address_line in ['None', '', 'NaN', 'nan']:
-        logging.info('No geocode for: ' + address_line)
-        return None, None
-    else:
-        try:
-            r = requests.get(url, timeout=10)
-            r.raise_for_status()
-            body = json.loads(r.content)
-            candidates = body['results']
-            if candidates == []:
-                logging.info('No geocode for: ' + address_line)
-                return None, None
-            else:
-                coords = body['results'][0]['geometry']['location']
-                lat = coords['lat']
-                lon = coords['lng']
-                logging.info('Geocode success for: ' + address_line)
-                return lat, lon
-        except Exception, e:
-            logging.error(e)
-            return None, None
+import psycopg2
+import sys
+import subprocess
 
 
-def reverse_geocode_google(lat='', lon='', **kwargs):
-    """Reverse geocoding function using Google geocoding API."""
-    google_token = conf['google_token']
-    lat = str(lat)
-    lon = str(lon)
-    url = 'https://maps.googleapis.com/maps/api/geocode/json?'\
-          + 'latlng={lat},{lon}&key={google_token}'
-    url = url.format(lat=lat, lon=lon, google_token=google_token)
-    if (lat == 'None' or lat == '' or lon == 'None' or lon == ''):
-        logging.info('No reverse geocode for this entry')
-        return None
-    else:
-        try:
-            r = requests.get(url)
-            r.raise_for_status()
-            body = json.loads(r.content)
-            candidates = body['results']
-            if candidates == []:
-                logging.info('No reverse geocode for: ' + lat + ', ' + lon)
-                return None
-            else:
-                if 'formatted_address' not in candidates[0]:
-                    logging.info('No reverse geocode for: ' + lat + ', ' + lon)
-                    return None
-                else:
-                    address = candidates[0]['formatted_address']
-                    logging.info('Geocode success for: ' + lat + ', ' + lon)
-                    return address
-        except Exception, e:
-            logging.error(e)
-            return None
+
+def shapefile2postgis(FILE_NAME, TABLE_NAME, DB_VARS):
+    """ Convert a shapefile to a PostGIS table """
+    try:
+        connect_command = 'ogr2ogr -f "PostgreSQL" PG:"host={} port={} user={} dbname={} password={}" -nlt PROMOTE_TO_MULTI {} -nln {} -append --config OGR_TRUNCATE YES'.format(
+            DB_VARS['DB_HOST'], DB_VARS['DB_PORT'], DB_VARS['DB_USER'],
+            DB_VARS['DB_NAME'], DB_VARS['DB_PASSWORD'], FILE_NAME, TABLE_NAME)
+        print("\n Executing: ", connect_command)
+        process = subprocess.Popen(connect_command, shell=True)
+
+        stdout, stderr = process.communicate()
+        print(stdout, stderr)
+        print ("Exit code: ", process.wait())
+
+        print ("\n Data from ", FILE_NAME, " added to ", TABLE_NAME, " sucessfully")
+
+    except Exception as err:
+        print ("Failed to add data from ", FILE_NAME, " to ", TABLE_NAME, ": ", err)
+        raise
 
 
-def geocode_address_esri(address_line='', **kwargs):
-    """Geocoding function using SANDAG geocoder."""
-    # Type safe
-    address_line = str(address_line)
-    url = "http://gis1.sandag.org/sdgis/rest/services/REDI/REDI_COMPOSITE_LOC/GeocodeServer/findAddressCandidates"
-    payload = {
-        'City': 'San Diego',
-        'SingleLine': address_line,
-        'outSR': '4326',
-        'f': 'pjson'
-    }
-    logging.info('ESRI Geocoding for: ' + address_line)
-    if (address_line == 'None' or address_line == ''):
-        logging.info('No geocode for: ' + address_line)
-        return None, None
-    else:
-        r = requests.get(url, payload)
-        r.raise_for_status()
-        resp = r.json()
-        candidates = resp['candidates']
-        if candidates == []:
-            logging.info('No geocode for: ' + address_line)
-            return None, None
-        else:
-            logging.info('Geocode success for: ' + address_line)
-            return candidates[0]['location']['y'],
-            candidates[0]['location']['x']
+
+
+def query_layer(IN_FILE, OUT_FILE, QUERY):
+    try:
+        connect_command = 'ogr2ogr -sql "{}" {} {}'.format(
+                QUERY,
+                OUT_FILE,
+                IN_FILE)
+        print("\n Executing: ", connect_command)
+        process = subprocess.Popen(connect_command, shell=True)
+
+        stdout, stderr = process.communicate()
+        print(stdout, stderr)
+        print ("Exit code: ", process.wait())
+        print ("\n Data from ", IN_FILE, " extracted to ", OUT_FILE, " sucessfully")
+
+    except Exception as err:
+        print("Failed to extract data from ", IN_FILE, " to ", OUT_FILE, ": ",
+              err)
+        raise
 
 
 def df_to_geodf_pt(df, lat='lat', lon='lon'):
     """Convert a dataframe with lat/lon (points) to a Geodataframe."""
-    logging.info('Converting points df to geodf.')
+    #logging.info('Converting points df to geodf.')
     df = df[np.isfinite(df[lat])]
     df = df[np.isfinite(df[lon])]
     df = df[df[lat] != 0]
     df = df[df[lon] != 0]
     df['geometry'] = df.apply(lambda z: Point(z[lon], z[lat]), axis=1)
     gdf = gpd.GeoDataFrame(df)
-    logging.info('Successfully created a geodf from points df.')
+    #logging.info('Successfully created a geodf from points df.')
     return gdf
 
 
 def geojson_to_geodf(file):
     """Open a geojson file and turn it into a GeodataFrame."""
-    logging.info('Importing geojson file as geodf.')
+    #logging.info('Importing geojson file as geodf.')
     gdf = gpd.read_file(file)
-    logging.info('Successfully imported geojson file as geodf.')
+    #logging.info('Successfully imported geojson file as geodf.')
     return gdf
 
 
 def spatial_join_pt(pt_file, poly_file, lat='lat', lon='lon'):
-    """Spatially join polygon attributes to point data.
-
-    'pt_file' is a csv file with latitude and longitude attributes that
-    can be interpreted as points.
-
-    'poly_file' is a geojson file that contains polygon data.
-
-    lat --> latitude field in the point df
-    lon --> longitude field in the point df
-
-    Both layers must use the same CRS.
-
-    This function returns a DataFrame, not a Geodataframe.
-    """
+    #    """Spatially join polygon attributes to point data.
+    #
+    #    'pt_file' is a csv file with latitude and longitude attributes that
+    #    can be interpreted as points.
+    #
+    #    'poly_file' is a geojson file that contains polygon data.
+    #
+    #    lat --> latitude field in the point df
+    #    lon --> longitude field in the point df
+    #
+    #    Both layers must use the same CRS.
+    #
+    #    This function returns a DataFrame, not a Geodataframe.
+    #    """
     logging.info('Loading both layers.')
     df = pd.read_csv(pt_file)
     pt = df_to_geodf_pt(df, lat, lon)
@@ -181,53 +116,22 @@ def spatial_join_pt(pt_file, poly_file, lat='lat', lon='lon'):
     return pt_join
 
 
-def extract_sde_data(table, where=''):
-    """Extract table from SDE and return dataframe.
-
-    'table': table name in SDE - what comes after 'SDW.CITY'.
-
-    'where': where clause to refine results (e.g County scale datasets).
-
-    """
-    sde_server = conf['sde_server']
-    sde_user = conf['sde_user']
-    sde_pw = conf['sde_pw']
-
-    sde_conn = pymssql.connect(sde_server, sde_user, sde_pw, 'sdw')
-
-    if where == '':
-        query = "SELECT *, [Shape].STAsText() as geom FROM SDW.CITY.{table}"
-        query = query.format(table=table)
-
-    else:
-        query = "SELECT *, [Shape].STAsText() as geom FROM SDW.CITY.{table}" \
-                + " WHERE {where}"
-        query = query.format(table=table, where=where)
-
-    df = pd.read_sql(query, sde_conn)
-
-    df.columns = [x.lower() for x in df.columns]
-    df = df.drop('shape', 1)
-
-    return df
-
-
 def df2shp(df, folder, layername, dtypes, gtype, epsg):
-    """Convert a df extracted from SDE to a shapefile.
-
-    'df' is a dataframe extracted from SDE with 'extract_sde_data'.
-
-    'folder' is the path to the folder where the shapefile will be saved.
-
-    'layername' is the name of the shapefile.
-
-    'dtypes' is an Orderdict containing the dtypes for each field.
-
-    'gtype' is the geometry type.
-
-    'epsg' is the EPSG code of the output.
-
-    """
+    #    """Convert a df extracted from SDE to a shapefile.
+    #
+    #    'df' is a dataframe extracted from SDE with 'extract_sde_data'.
+    #
+    #    'folder' is the path to the folder where the shapefile will be saved.
+    #
+    #    'layername' is the name of the shapefile.
+    #
+    #    'dtypes' is an Orderdict containing the dtypes for each field.
+    #
+    #    'gtype' is the geometry type.
+    #
+    #    'epsg' is the EPSG code of the output.
+    #
+    #    """
     schema = {'geometry': gtype, 'properties': dtypes}
 
     with fiona.collection(
@@ -333,3 +237,150 @@ def pt_proj_conversion(lon, lat, in_proj=2230, out_proj=4326):
     lon_t = point.GetX()
 
     return lon_t, lat_t
+
+
+
+## Need Refactor
+#def geocode_address_google(address_line='',
+#                           locality='San Diego',
+#                           state='CA',
+#                           **kwargs):
+#    """Geocoding function using Google geocoding API."""
+#    address_line = str(address_line)
+#    locality = str(locality)
+#    state = str(state)
+#    google_token = conf['google_token']
+#    url = 'https://maps.googleapis.com/maps/api/geocode/json?'\
+#          + 'address={address}&'\
+#          + 'components=country:US|'\
+#          + 'administrative_area:{state}|'\
+#          + 'locality:{locality}&'\
+#          + 'key={google_token}'
+#
+#    url = url.format(address=address_line,
+#                     state=state,
+#                     locality=locality,
+#                     google_token=google_token)
+#
+#    logging.info('Google Geocoding for: ' + address_line)
+#    if address_line in ['None', '', 'NaN', 'nan']:
+#        logging.info('No geocode for: ' + address_line)
+#        return None, None
+#    else:
+#        try:
+#            r = requests.get(url, timeout=10)
+#            r.raise_for_status()
+#            body = json.loads(r.content)
+#            candidates = body['results']
+#            if candidates == []:
+#                logging.info('No geocode for: ' + address_line)
+#                return None, None
+#            else:
+#                coords = body['results'][0]['geometry']['location']
+#                lat = coords['lat']
+#                lon = coords['lng']
+#                logging.info('Geocode success for: ' + address_line)
+#                return lat, lon
+#        except Exception, e:
+#            logging.error(e)
+#            return None, None
+#
+#
+#def reverse_geocode_google(lat='', lon='', **kwargs):
+#    """Reverse geocoding function using Google geocoding API."""
+#    google_token = conf['google_token']
+#    lat = str(lat)
+#    lon = str(lon)
+#    url = 'https://maps.googleapis.com/maps/api/geocode/json?'\
+#          + 'latlng={lat},{lon}&key={google_token}'
+#    url = url.format(lat=lat, lon=lon, google_token=google_token)
+#    if (lat == 'None' or lat == '' or lon == 'None' or lon == ''):
+#        logging.info('No reverse geocode for this entry')
+#        return None
+#    else:
+#        try:
+#            r = requests.get(url)
+#            r.raise_for_status()
+#            body = json.loads(r.content)
+#            candidates = body['results']
+#            if candidates == []:
+#                logging.info('No reverse geocode for: ' + lat + ', ' + lon)
+#                return None
+#            else:
+#                if 'formatted_address' not in candidates[0]:
+#                    logging.info('No reverse geocode for: ' + lat + ', ' + lon)
+#                    return None
+#                else:
+#                    address = candidates[0]['formatted_address']
+#                    logging.info('Geocode success for: ' + lat + ', ' + lon)
+#                    return address
+#        except Exception, e:
+#            logging.error(e)
+#            return None
+#
+#
+#def geocode_address_esri(address_line='', **kwargs):
+#    """Geocoding function using SANDAG geocoder."""
+#    # Type safe
+#    address_line = str(address_line)
+#    url = "http://gis1.sandag.org/sdgis/rest/services/REDI/REDI_COMPOSITE_LOC/GeocodeServer/findAddressCandidates"
+#    payload = {
+#        'City': 'San Diego',
+#        'SingleLine': address_line,
+#        'outSR': '4326',
+#        'f': 'pjson'
+#    }
+#    logging.info('ESRI Geocoding for: ' + address_line)
+#    if (address_line == 'None' or address_line == ''):
+#        logging.info('No geocode for: ' + address_line)
+#        return None, None
+#    else:
+#        r = requests.get(url, payload)
+#        r.raise_for_status()
+#        resp = r.json()
+#        candidates = resp['candidates']
+#        if candidates == []:
+#            logging.info('No geocode for: ' + address_line)
+#            return None, None
+#        else:
+#            logging.info('Geocode success for: ' + address_line)
+#            return candidates[0]['location']['y'],
+#            candidates[0]['location']['x']
+#
+#
+
+#
+#def extract_sde_data(table, where=''):
+#    """Extract table from SDE and return dataframe.
+#
+#    'table': table name in SDE - what comes after 'SDW.CITY'.
+#
+#    'where': where clause to refine results (e.g County scale datasets).
+#
+#    """
+#    sde_server = conf['sde_server']
+#    sde_user = conf['sde_user']
+#    sde_pw = conf['sde_pw']
+#
+#    sde_conn = pymssql.connect(sde_server, sde_user, sde_pw, 'sdw')
+#
+#    if where == '':
+#        query = "SELECT *, [Shape].STAsText() as geom FROM SDW.CITY.{table}"
+#        query = query.format(table=table)
+#
+#    else:
+#        query = "SELECT *, [Shape].STAsText() as geom FROM SDW.CITY.{table}" \
+#                + " WHERE {where}"
+#        query = query.format(table=table, where=where)
+#
+#    df = pd.read_sql(query, sde_conn)
+#
+#    df.columns = [x.lower() for x in df.columns]
+#    df = df.drop('shape', 1)
+#
+#    return df
+#
+#
+
+#
+#

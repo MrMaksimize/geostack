@@ -21,7 +21,7 @@ def check_file(file_name):
 def add_tippecanoe_config(output_path, layer_config):
     """ Given a configuration, add the configuration to a given GeoJSON file """
 
-    print "\n Rewriting GeoJSON to add tippecanoe options"
+    print("\n Rewriting GeoJSON to add tippecanoe options")
     with open(output_path, 'r+') as geojson_file:
         geojson = json.load(geojson_file)
         for feature in geojson["features"]:
