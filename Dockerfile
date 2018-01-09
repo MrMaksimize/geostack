@@ -84,10 +84,12 @@ RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - \
 ## Switch to NB_USER to install node deps
 USER $NB_USER
 
-RUN npm install -g mapshaper \
-    && npm install -g @turf/turf \
-    && npm install -g geobuf \
-    && npm install -g @mapbox/mapbox-tile-copy
+RUN npm install -g yarn\
+    && yarn global add mapshaper \
+    && yarn global add @turf/turf \
+    && yarn global add geobuf \
+    && yarn global add gulp \
+    && yarn global add @mapbox/mapbox-tile-copy
 
 
 # Python packages
