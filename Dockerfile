@@ -3,7 +3,7 @@
 # BUILD: docker build --rm -t mrmaksimize/geostack.
 # SOURCE: https://github.com/mrmaksimize/geostack
 
-FROM jupyter/scipy-notebook
+FROM jupyter/base-notebook
 
 # Configure environment - matches base notebook
 ENV CONDA_DIR=/opt/conda \
@@ -37,7 +37,6 @@ RUN set -ex \
         #libsasl2-dev \
         #libssl-dev \
         #libffi-dev \
-        #build-essential \
         #libcurl4-gnutls-dev \
         #libnetcdf-dev \
         #libpoppler-dev \
@@ -46,6 +45,14 @@ RUN set -ex \
         #libblas-dev \
         #liblapack-dev \
         #libpq-dev \
+        apt-utils \
+        build-essential \
+        curl \
+        freetds-dev \
+        gdal-bin \
+        git \
+        gnupg2 \
+        libaio1 \
         libgdal-dev \
         libproj-dev \
         libgeos-dev \
@@ -54,26 +61,23 @@ RUN set -ex \
         libfreetype6-dev \
         libxml2-dev \
         libxslt-dev \
-        gnupg2 \
         libsqlite3-dev \
+        netcat \
+        python-dev \
+        python-gdal \
+        sqlite3 \
+        unzip \
+        less \
+        vim \
+        wget \
+        zlib1g \
         zlib1g-dev \
     ' \
     && apt-get clean -yqq \
     && apt-get update -yqq \
-    && apt-get install -yqq --no-install-recommends \
-        $buildDeps \
-        apt-utils \
-        curl \
-        netcat \
-        python-gdal \
-        libaio1 \
-        unzip \
-        less \
-        freetds-dev \
-        vim \
-        wget \
-        gdal-bin \
-        sqlite3
+    && apt-get install -yqq --no-install-recommends $buildDeps \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 
 ## NodeJS packages
@@ -89,7 +93,8 @@ RUN npm install -g yarn\
     && yarn global add @turf/turf \
     && yarn global add geobuf \
     && yarn global add gulp \
-    && yarn global add @mapbox/mapbox-tile-copy
+    && yarn global add @mapbox/mapbox-tile-copy \
+    && yarn global add @mapbox/mapbox-upload-validate
 
 
 # Python packages
