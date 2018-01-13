@@ -1,7 +1,7 @@
 version: '3'
 services:
     postgis:
-        image: postgres:9.6
+        image: mdillon/postgis:9.6
         environment:
             - POSTGRES_USER=${PG_USER}
             - POSTGRES_PASSWORD=${PG_PASS}
@@ -35,6 +35,7 @@ services:
             - POSTGRES_DB=geopostgis
         ports:
             - "8888:8888"
+            - "9090:9090"
         links:
             - postgis:postgis
         command: start-notebook.sh --NotebookApp.token=''
@@ -43,7 +44,7 @@ services:
         image: crazycapivara/docker-mapshaper:latest
         restart: always
         volumes:
-            - ${PATH_PREFIX}/work_dir:/home/jovyan/work
+            - ${PATH_PREFIX}/work:/home/jovyan/work
         ports:
             - "5555:5555"
 

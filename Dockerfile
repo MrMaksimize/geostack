@@ -63,6 +63,7 @@ RUN set -ex \
         libxslt-dev \
         libsqlite3-dev \
         netcat \
+        osm2pgsql \
         python-dev \
         python-gdal \
         sqlite3 \
