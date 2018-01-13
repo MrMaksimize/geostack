@@ -28,3 +28,4 @@ db/*
 !db/.keep
 work/*
 !work/utils
+!work/tegola
