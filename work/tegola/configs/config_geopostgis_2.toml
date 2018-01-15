@@ -1,3 +1,4 @@
+#http://localhost:9090/#12.16/50.7725/7.033
 [webserver]
 port = ":9090"              # port to bind the web server to. defaults ":8080"
 CORSAllowedOrigin = "*"
@@ -38,7 +39,7 @@ name = "zoning"
 
   [[maps.layers]]
   provider_layer = "bonn.road"
-  min_zoom = 15
+  min_zoom = 12
   max_zoom = 20
 
   [[maps.layers]]
