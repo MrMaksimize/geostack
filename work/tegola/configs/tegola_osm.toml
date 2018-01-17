@@ -1,0 +1,74 @@
+[webserver]
+port = ":9090"              # port to bind the web server to. defaults ":8080"
+CORSAllowedOrigin = "*"
+
+
+[cache]
+type="file"
+basepath="/tmp/tegola-cache-test"
+
+# See https://github.com/terranodo/tegola/blob/master/cache/s3cache/README.md
+#[cache]
+#type="s3"
+#bucket=""
+#region = ""
+#aws_access_key_id = ""
+#aws_secret_access_key = ""
+
+#   Open Street Map (OSM)
+[[providers]]
+name = "osm"
+type = "postgis"
+host = "postgis"
+port = 5432
+database = "geopostgis4"
+user = "airmaster"
+password = "airmasterPass"
+
+	#[[providers.layers]]
+	#name = "land_8-20"
+	#geometry_fieldname = "geometry"
+	#id_fieldname = "ogc_fid"
+	#sql = "SELECT ST_AsBinary(wkb_geometry) AS geometry, ogc_fid FROM land_polygons WHERE wkb_geometry && !BBOX!"
+
+	# Water
+	
+	[[providers.layers]]
+	name = "admin_boundaries_8-12"
+	geometry_fieldname = "geometry"
+	id_fieldname = "osm_id"
+	sql = "SELECT ST_AsBinary(geometry) AS geometry, osm_id, admin_level, name, type FROM osm_admin_areas WHERE admin_level IN (1,2,3,4,5,6,7,8) AND geometry && !BBOX!"
+
+	[[providers.layers]]
+	name = "admin_boundaries_13-20"
+	geometry_fieldname = "geometry"
+	id_fieldname = "osm_id"
+	sql = "SELECT ST_AsBinary(geometry) AS geometry, osm_id, admin_level, name, type FROM osm_admin_areas WHERE admin_level IN (1,2,3,4,5,6,7,8,9,10) AND geometry && !BBOX!"
+
+
+[[maps]]
+name = "osm"
+attribution = "Open Street Map" # map attribution
+center = [-76.275329586789, 39.153492567373, 8.0] # optional center value. part of the TileJSON spec
+
+
+	#[[maps.layers]]
+	#name = "land"
+	#provider_layer = "osm.land_8-20"
+	#min_zoom = 8
+	#max_zoom = 20
+
+	[[maps.layers]]
+	name = "admin_lines"
+	provider_layer = "osm.admin_boundaries_8-12"
+	min_zoom = 8
+	max_zoom = 12
+
+	[[maps.layers]]
+	name = "admin_lines"
+	provider_layer = "osm.admin_boundaries_13-20"
+	min_zoom = 13
+	max_zoom = 20
+
+	
+

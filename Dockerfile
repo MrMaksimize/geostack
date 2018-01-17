@@ -27,7 +27,10 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # GDAL data env
-ENV GDAL_DATA /usr/share/gdal/2.1
+#ENV GDAL_DATA /usr/share/gdal/2.1
+ENV GDAL_DATA /opt/conda/share/gdal
+
+# TODO find out - for some reason conda just takes over and is not giving jovyan a lot of control
 
 # Debian packages and libraries
 RUN set -ex \
